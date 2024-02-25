@@ -1,24 +1,19 @@
 package com.ritesh.core;
 
-import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.concurrent.Callable;
+
 @EqualsAndHashCode(callSuper = true)
-@Data
-@NoArgsConstructor
+@Getter
+@Setter
 @Slf4j
 public class Task extends AbstractTask {
 
-    @Override
-    public void core() {
-        log.info("Performing core logic for task 0");
+    public <T> Task(String name, Callable<T> taskLogic) {
+        super(name, taskLogic);
     }
-
-    public Task(String name) {
-        super(name);
-    }
-
-
 }

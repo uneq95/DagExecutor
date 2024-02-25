@@ -1,9 +1,10 @@
 package com.ritesh.core;
 
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,7 +22,7 @@ public class DagExecutor {
 
 
     public void executeDag(Dag dag) {
-        Map<String, CompletableFuture<Void>> taskFutures = new HashMap<>();
+        Map<String, CompletableFuture<Object>> taskFutures = new HashMap<>();
 
         // Prepare CompletableFutures for all tasks, initially incomplete
         dag.getTasks().forEach(task -> taskFutures.put(task.getName(), new CompletableFuture<>()));
@@ -38,24 +39,25 @@ public class DagExecutor {
         });
     }
 
-    private static void setupTaskExecution(AbstractTask task, Map<String, CompletableFuture<Void>> taskFutures) {
-        CompletableFuture<Void> taskFuture = taskFutures.get(task.getName());
+    private static void setupTaskExecution(AbstractTask task, Map<String, CompletableFuture<Object>> taskFutures) {
+        CompletableFuture<Object> taskFuture = taskFutures.get(task.getName());
 
-        List<CompletableFuture<Void>> dependencyFutures = task.getParentTasks().stream()
+        List<CompletableFuture<Object>> dependencyFutures = task.getParentTasks().stream()
                 .map(key -> taskFutures.get(key.getName()))
                 .collect(Collectors.toList());
 
         CompletableFuture<Void> allDependencies = CompletableFuture.allOf(dependencyFutures.toArray(new CompletableFuture[0]));
 
-        // Run the task after all dependencies are complete
+        // Adapt Callable to Supplier and handle exceptions within the lambda
         allDependencies.thenRunAsync(() -> {
             try {
-                task.run();
-                taskFuture.complete(null); // Mark this task's future as complete upon successful execution
+                Object result = task.invoke(); // Execute the Callable
+                taskFuture.complete(result); // Complete with the result of the Callable
             } catch (Exception e) {
-                taskFuture.completeExceptionally(e); // Propagate error if task execution fails
+                taskFuture.completeExceptionally(e); // Complete exceptionally if Callable throws an exception
             }
         }, executorService);
     }
+
 
 }
