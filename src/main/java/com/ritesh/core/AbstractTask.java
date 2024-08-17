@@ -55,4 +55,11 @@ public abstract class AbstractTask {
         return result;
     }
 
+    public void dependsOn(@NonNull AbstractTask task) {
+        this.addDependency(task);
+    }
+
+    public void dependsOn(@NonNull Set<AbstractTask> tasks) {
+        tasks.forEach(this::dependsOn);
+    }
 }

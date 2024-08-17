@@ -2,13 +2,13 @@ package com.ritesh.core;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class DagExecutor {
@@ -42,11 +42,8 @@ public class DagExecutor {
     private static void setupTaskExecution(AbstractTask task, Map<String, CompletableFuture<Object>> taskFutures) {
         CompletableFuture<Object> taskFuture = taskFutures.get(task.getName());
 
-        List<CompletableFuture<Object>> dependencyFutures = task.getParentTasks().stream()
-                .map(key -> taskFutures.get(key.getName()))
-                .collect(Collectors.toList());
-
-        CompletableFuture<Void> allDependencies = CompletableFuture.allOf(dependencyFutures.toArray(new CompletableFuture[0]));
+        CompletableFuture<Void> allDependencies = CompletableFuture.allOf(task.getParentTasks().stream()
+                .map(key -> taskFutures.get(key.getName())).toArray(CompletableFuture[]::new));
 
         // Adapt Callable to Supplier and handle exceptions within the lambda
         allDependencies.thenRunAsync(() -> {
@@ -59,5 +56,13 @@ public class DagExecutor {
         }, executorService);
     }
 
+    public static void runDag(Class<? extends DagDefinition> dagClass, Map<String, ?> conf) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        Constructor<?> customConstructor = dagClass.getConstructor(Map.class);
+        DagDefinition dagObject = ((DagDefinition) customConstructor.newInstance(conf));
+
+        Dag dag = new Dag(dagObject.getDagName(), dagObject.getTasks());
+        DagExecutor dagExecutor = DagExecutor.getInstance();
+        dagExecutor.executeDag(dag);
+    }
 
 }

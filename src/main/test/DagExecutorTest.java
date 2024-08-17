@@ -1,7 +1,10 @@
 import com.ritesh.core.*;
+import com.ritesh.core.dags.CustomDag1;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -78,5 +81,11 @@ public class DagExecutorTest {
 
         DagExecutor dagExecutor = DagExecutor.getInstance();
         dagExecutor.executeDag(dag);
+    }
+
+    @Test
+    public void testCustomDag1() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        //new CustomDag1().run();
+        DagExecutor.runDag(CustomDag1.class, new HashMap<>());
     }
 }
