@@ -1,5 +1,6 @@
-package com.ritesh.core;
+package com.ritesh.core.example;
 
+import com.ritesh.core.AbstractTask;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -7,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class Task5 extends AbstractTask{
+public class Task5 extends AbstractTask {
 
 
     @Override

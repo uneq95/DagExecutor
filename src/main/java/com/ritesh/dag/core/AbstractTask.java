@@ -1,10 +1,13 @@
-package com.ritesh.core;
+package com.ritesh.dag.core;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 
+import javax.persistence.Transient;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -12,11 +15,14 @@ import java.util.Set;
 @Setter
 @Slf4j
 public abstract class AbstractTask implements Runnable {
-
     private String name;
     private Set<AbstractTask> nextTasks = new HashSet<>();
     private Set<AbstractTask> parentTasks = new HashSet<>();
-
+    
+    @Transient
+    @Autowired
+    protected transient ApplicationContext applicationContext;
+    
     public AbstractTask(){}
 
     public AbstractTask(String name){
