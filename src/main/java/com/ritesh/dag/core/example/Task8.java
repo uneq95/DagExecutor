@@ -1,5 +1,6 @@
-package com.ritesh.core;
+package com.ritesh.core.example;
 
+import com.ritesh.core.AbstractTask;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 

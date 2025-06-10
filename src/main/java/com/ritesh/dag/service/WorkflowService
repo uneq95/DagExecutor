@@ -1,0 +1,70 @@
+package com.ritesh.dag.service;
+
+import com.ritesh.dag.core.AbstractTask;
+import com.ritesh.dag.core.Dag;
+import com.ritesh.dag.core.DagExecutor;
+import com.ritesh.dag.model.Status;
+import com.ritesh.dag.model.TaskExecution;
+import com.ritesh.dag.model.WorkflowExecution;
+import com.ritesh.dag.repository.TaskExecutionRepository;
+import com.ritesh.dag.repository.WorkflowExecutionRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+
+@Service
+@RequiredArgsConstructor
+public class WorkflowService {
+    private final DagExecutor dagExecutor;
+    private final WorkflowExecutionRepository workflowRepo;
+    private final TaskExecutionRepository taskRepo;
+
+    @Transactional
+    public String startWorkflow(String name, Set<? extends AbstractTask> tasks) {
+        // Create and save workflow
+        WorkflowExecution workflow = new WorkflowExecution();
+        workflow.setId(UUID.randomUUID().toString());
+        workflow.setName(name);
+        workflow.setStatus(Status.PENDING);
+        workflow.setStartTime(Instant.now());
+        workflow = workflowRepo.save(workflow);
+
+        // Initialize tasks with workflow context
+        String workflowId = workflow.getId();
+        tasks.forEach(task -> {
+            task.setWorkflowId(workflowId);
+            task.setTaskExecutionRepository(taskRepo);
+            
+            // Create task execution record
+            TaskExecution taskExecution = new TaskExecution();
+            taskExecution.setId(UUID.randomUUID().toString());
+            taskExecution.setName(task.getName());
+            taskExecution.setStatus(Status.PENDING);
+            taskExecution.setWorkflow(workflow);
+            taskRepo.save(taskExecution);
+        });
+
+        // Execute DAG asynchronously
+        Dag dag = new Dag(name, tasks);
+        CompletableFuture<Void> execution = dagExecutor.executeDag(dag);
+        
+        // Update workflow status when complete
+        execution.whenComplete((result, ex) -> {
+            workflow.setEndTime(Instant.now());
+            if (ex != null) {
+                workflow.setStatus(Status.FAILED);
+                workflow.setErrorMessage(ex.getMessage());
+            } else {
+                workflow.setStatus(Status.COMPLETED);
+            }
+            workflowRepo.save(workflow);
+        });
+
+        return workflowId;
+    }
+}

@@ -1,0 +1,43 @@
+package com.ritesh.dag.config;
+
+import com.ritesh.dag.core.DagExecutor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
+@Configuration
+@EnableAsync
+@EnableConfigurationProperties(DagProperties.class)
+@EntityScan("com.ritesh.dag.model")
+@EnableJpaRepositories("com.ritesh.dag.repository")
+public class DagAutoConfiguration {
+
+    private final DagProperties properties;
+
+    public DagAutoConfiguration(DagProperties properties) {
+        this.properties = properties;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ThreadPoolTaskExecutor taskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(properties.getCorePoolSize());
+        executor.setMaxPoolSize(properties.getMaxPoolSize());
+        executor.setQueueCapacity(properties.getQueueCapacity());
+        executor.setThreadNamePrefix("DagExecutor-");
+        executor.initialize();
+        return executor;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public DagExecutor dagExecutor(ThreadPoolTaskExecutor taskExecutor) {
+        return new DagExecutor(taskExecutor);
+    }
+}
